@@ -1,0 +1,12 @@
+{
+    "java.project.sourcePaths": [
+        "."
+    ],
+    "java.project.referencedLibraries": [
+        "oracleworkbench\\ojdbc17.jar",
+        "c:\\Program Files\\Java\\javafx-sdk-21.0.6\\lib\\javafx.graphics.jar",
+        "c:\\Program Files\\Java\\javafx-sdk-21.0.6\\lib\\javafx.controls.jar",
+        "c:\\Program Files\\Java\\javafx-sdk-21.0.6\\lib\\javafx.swing.jar",
+        "c:\\Program Files\\Java\\javafx-sdk-21.0.6\\lib\\javafx.base.jar"
+    ]
+}

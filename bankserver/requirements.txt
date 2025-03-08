@@ -1,0 +1,6 @@
+cryptography
+bcrypt
+sqlalchemy
+cx_Oracle
+requests
+readchar
