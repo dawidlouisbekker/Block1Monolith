@@ -1,5 +1,5 @@
-from .serverutils import ClientSocketThread,clientManager, colorsPrinter,os, getOracleDB,  bcrypt, socket, BASE_PATH, GetEntities, getFilesAndDirs, time
-from .serverutils import BankAdmin, Admin
+from .serverutils import ClientSocketThread,clientManager, colorsPrinter,os, getOracleDB,  bcrypt, socket, BASE_PATH, GetEntities, getFilesAndDirs, time, gensalt, hashpw
+from .serverutils import BankAdmin, Admin, BankClient
 from .adminutils import AdminSocketThread,BankAdminSocketThread
 from pathlib import Path
 
@@ -70,15 +70,16 @@ def handleClient(client : ClientSocketThread, addr):
                                     currentDir = currentDir.parent
                                 else:
                                     value = msgdict.get("value")
+                                    
                                     if action == "create" and checkVal(value):
                                         try:                     
                                             result = CreateDirectory(username=client.user.username,directoryName=value,currentDir=currentDir)
                                             client.sendJson(message={ "message" : result[0], "state" : result[1] })
                                         except Exception as e:
                                             print(e)
-                                            time.sleep(2)
-                                            client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+                                            client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })                                         
                                     #Required permission
+                                    
                                     if action == "delete" and checkVal(value):
                                         try:
                                             del_dir = currentDir / value
@@ -87,11 +88,13 @@ def handleClient(client : ClientSocketThread, addr):
                                         except Exception as e:
                                             print(e)
                                             client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+                                            
                                     if action == "next" and checkVal(value):
                                         currentDir = currentDir / value
                                         files, dirs = getFilesAndDirs(username=client.user.username,path=currentDir)
                                         payload = { "files" : files, "dirs" : dirs }
                                         client.sendJson(payload)
+                                        
                             case "file":
                                 if action == "est":
                                     #create 
@@ -223,7 +226,7 @@ def handleAdmin(client_thread : ClientSocketThread, addr):
             admin = db.query(BankAdmin).filter(BankAdmin.uuid == uuid).first()
             
             if admin is None:
-                colorsPrinter.logRedAction(basemessage="FAILED LOGGIN",message=f"user {colorsPrinter.YELLOW}{username}{colorsPrinter.RESET} tried to login.")
+                colorsPrinter.logRedAction(basemessage="FAILED LOGGIN",message=f"user {colorsPrinter.YELLOW}{uuid}{colorsPrinter.RESET} tried to login.")
                 client_thread.socket.close()
                 return
             
@@ -255,6 +258,35 @@ def handleAdmin(client_thread : ClientSocketThread, addr):
                     action = msgdict.get("action")
                     if subject and action:
                         match subject:
+                            case "client":
+                                value : dict = msgdict.get("value")
+                                firstname = value.get("firstname")
+                                middlename = value.get("middlename")
+                                lastname = value.get("lastname")
+                                email = value.get("email")
+                                cellNo = value.get("cellNo")
+                                idNumber = value.get("idNumber")
+                                password = value.get("password")
+                                print(f"Firstname: {firstname}, Middlename: {middlename}, Lastname: {lastname}, Email: {email}, Cell No: {cellNo}, ID Number: {idNumber}, Password: {password}")
+                                db = getOracleDB()
+                                salt = gensalt()
+                                hashed_password = hashpw(password=password.encode('utf-8'),salt=salt)
+                                try:
+                                    client = BankClient(
+                                        firstname=firstname,
+                                        middlename=middlename,
+                                        lastname=lastname,
+                                        email=email,
+                                        cellNo=cellNo,
+                                        idNumber=idNumber,
+                                        hashed_passwd = hashed_password,
+                                        salt=salt
+                                    )
+                                except Exception as e:
+                                    print(e)
+                                finally:
+                                    db.close()
+
                             case "directory":
                                 value = msgdict.get("value")
                                 if action == "create" and checkVal(value):

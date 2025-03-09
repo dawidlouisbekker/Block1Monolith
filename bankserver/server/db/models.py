@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, Engine, LargeBinary, ForeignKey, Float
+from sqlalchemy import create_engine, Column, String, Integer, Engine, LargeBinary, ForeignKey, Float, Boolean
 from sqlalchemy.orm import declarative_base, Session, sessionmaker
 from sqlalchemy.engine import Engine
 import os
@@ -12,7 +12,7 @@ CON_STR_HOST = "@DawidBekker2005:1521/XE"
 
 OWNER = os.getenv("OWNER", "c##bank_user:askljnobbDSAi12sSda")
 
-SQLITE_URI = os.getenv("SQLITE_URI", "sqlite:///users.db")
+#SQLITE_URI = os.getenv("SQLITE_URI", "sqlite:///users.db")
 ORACLE_URI = f"{CON_STR_DRIVER}{OWNER}{CON_STR_HOST}"
 
 try:
@@ -59,6 +59,7 @@ class BankAdmin(Base):
     __tablename__ = "bank_admins"
     uuid = Column(String(36),primary_key=True)
     email = Column(String(60),nullable=False)
+    
     hashed_password = Column(LargeBinary)
     salt = Column(LargeBinary)
     
@@ -81,9 +82,7 @@ class Admin(Base):
     org_unit = Column(String(60),nullable=True)
     company = Column(String(60),nullable=True)
 
-
-
-class Client(Base):
+class BankClient(Base):
     __tablename__ = "clients"
     client_id = Column(Integer, autoincrement=True, primary_key=True)
     firstname = Column(String(70))
@@ -92,24 +91,26 @@ class Client(Base):
     email = Column(String(60))
     cell_no = Column(String(13))
     id_number = Column(String) 
+    hashed_passwd = Column(LargeBinary)
+    salt = Column(LargeBinary)
 
 class Company(Base):
     __tablename__ = "companies"
     company_id = Column(Integer,autoincrement=True,primary_key=True)
     name = Column(String(60))
     hashed_password = Column(LargeBinary)
-    salt = Column(String(100))
     intmedCert = Column(LargeBinary)
     hashed_passphrase = Column(LargeBinary)
     intmdPrivKey = Column(LargeBinary)
+    salt = Column(LargeBinary)
 
 class Account(Base):
     __tablename__ = "accounts"
-    account_id = Column(Integer,primary_key=True)
+    account_id = Column(Integer,autoincrement=True,primary_key=True)
     client_id =  Column(Integer,ForeignKey("clients.client_id"),nullable=True)
-    company_id = Column(Integer,ForeignKey("companies.client_id"),nullable=True)
+    company_id = Column(Integer,ForeignKey("companies.company_id"),nullable=True)
     balance = Column(Float)
-    
+
 class Transaction(Base):
     __tablename__ = "transactions"
     transaction_id = Column(Integer, autoincrement=True, primary_key=True)
@@ -118,24 +119,35 @@ class Transaction(Base):
     reference = Column(String(100))
     description = Column(String(200))
     ref_transaction = Column(Integer,ForeignKey("transactions.transaction_id"))
-    
+
 class Group(Base):
     __tablename__ = "company_groups"
+    group_id = Column(Integer, autoincrement=True, primary_key=True)
     company_id = Column(Integer,  ForeignKey("companies.company_id"))
     group_name = Column(String(60), nullable=False)
     group_code = Column(String(100), nullable=False)
-    
 
-    
-    
-    
-      
+class UserGroup(Base):
+    __tablename__ = "user_groups"
+    intance_id = Column(Integer,primary_key=True)
+    group_id = Column(Integer,ForeignKey("company_groups.group_id"))
+    user_uuid = Column(String(36), ForeignKey("company_users.user_id"))
+    ftp_login = Column(Boolean)
+    ftp_upload = Column(Boolean)
+    ftp_download = Column(Boolean)
 
-
-class CompanyData:
-    def __init__(self, name : str, engine : Engine):
-        self.name = name
-        self.engine = engine
+class CompanyUser(Base):
+    __tablename__ = "company_users"
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    uuid = Column(String(36))
+    email = Column(String(60), nullable=False)
+    
+    hashed_password = Column(LargeBinary)
+    salt = Column(LargeBinary)
+    
+    cert = Column(LargeBinary)
+    key = Column(LargeBinary)
+    
         
 '''
     def createGroupsTable(self):

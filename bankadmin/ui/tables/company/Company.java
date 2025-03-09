@@ -1,4 +1,4 @@
-package bankadmin;
+package bankadmin.ui.tables.company;
 
 public class Company {
     public String name;

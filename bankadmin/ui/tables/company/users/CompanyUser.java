@@ -1,8 +1,8 @@
-package bankadmin;
+package bankadmin.ui.tables.company.users;
 
 import bankadmin.json.JSONPayload;
 
-public class User {
+public class CompanyUser {
     public String orgUnit;
     public String prevUsername = null;
     public String username = null;
@@ -12,13 +12,13 @@ public class User {
     private JSONPayload payload;
     private boolean[] updatedFields;
 
-    public User(String username, String organizationalUnit,  String group) {
+    public CompanyUser(String username, String organizationalUnit,  String group) {
         this.orgUnit = organizationalUnit;
         this.username = username;
         this.group = group;
     }
 
-    public User() {
+    public CompanyUser() {
         this.orgUnit = "";
         this.username = "";
         this.group = "";
@@ -38,6 +38,15 @@ public class User {
             this.prevUsername = this.username;
         }
     }   
+
+    public void displayAll() {
+        System.out.println("orgUnit: " + this.orgUnit);
+        System.out.println("prevUsername: " + this.prevUsername);
+        System.out.println("username: " + this.username);
+        System.out.println("company: " + this.company);
+        System.out.println("group: " + this.group);
+        System.out.println("edited: " + this.edited);
+    }
 
     public void setUsername(String username) {
         if (username == null) {

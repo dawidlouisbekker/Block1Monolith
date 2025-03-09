@@ -1,4 +1,4 @@
-package bankadmin;
+package bankadmin.com;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -16,7 +16,7 @@ public class SAV {
 
     public String data = null;
 
-    SAV (OutputStream out, InputStream in) {
+    public SAV (OutputStream out, InputStream in) {
         this.in = in;
         this.out = out;
     };

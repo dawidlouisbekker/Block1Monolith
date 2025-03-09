@@ -1,7 +1,8 @@
-package bankadmin;
+package bankadmin.ui.tables.company.users;
 import java.util.ArrayList;
 import java.util.List;
 
+import bankadmin.com.SAV;
 import javafx.application.Platform;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -16,37 +17,40 @@ import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
 
 
-public class UsersTable extends VBox {
-    private TableView<bankadmin.User> table;
+public class CompanyUsersTable extends VBox {
+    private TableView<CompanyUser> table;
     private HBox actions = new HBox(5);
 
-    private User[] users;
-    private List<User> filteredUsers;
+    private CompanyUser[] CompanyUsers;
+    private List<CompanyUser> filteredCompanyUsers;
     private List<String> companies;
     private String selectedCompany;
 
-    void addUser() {
-        System.out.println("Add user.");
+    void addCompanyUser() {
+        System.out.println("Add CompanyUser.");
     }
 
     void displayActions(){
-        Button addUsers = new Button();
-        addUsers.setOnAction((event) -> {
-            addUser();
-        });
-        addUsers.setText("Add User");
 
-        actions.getChildren().add(addUsers);
+        Button addCompanyUsers = new Button();
+        addCompanyUsers.setOnAction((event) -> {
+            addCompanyUser();
+        });
+
+        addCompanyUsers.setText("Add CompanyUser");
+
+        actions.getChildren().add(addCompanyUsers);
         this.getChildren().add(actions);
+
     }
 
 
 
-    UsersTable(User[] users, SAV sav) {
-        this.users = users;
+    public CompanyUsersTable(CompanyUser[] CompanyUsers, SAV sav) {
+        this.CompanyUsers = CompanyUsers;
         this.companies = new ArrayList<>();
         this.companies.add("All");
-        for (User usr : users) {
+        for (CompanyUser usr : CompanyUsers) {
             if (usr.getCompany() != null) {
                 String company = usr.getCompany();
                 if (!this.companies.contains(company)) {
@@ -54,11 +58,11 @@ public class UsersTable extends VBox {
                 }
             }
         }
-        this.users = users;
+        this.CompanyUsers = CompanyUsers;
         Platform.runLater(() -> {
             table = new TableView<>();
             table.getStylesheets().add(getClass().getResource("styles/table.css").toExternalForm());
-            ObservableList<User> data = FXCollections.observableArrayList(this.users);
+            ObservableList<CompanyUser> data = FXCollections.observableArrayList(this.CompanyUsers);
             table.setItems(data);
             table.setEditable(true);
 
@@ -67,59 +71,61 @@ public class UsersTable extends VBox {
                 Button companyButton = new Button(company);
                 companyButton.setOnAction(event -> {
                     if (company.equals("All")) {
-                        table.setItems(FXCollections.observableArrayList(this.users));
+                        table.setItems(FXCollections.observableArrayList(this.CompanyUsers));
                         return;
                     }
                     this.selectedCompany = company;
-                    this.filteredUsers = new ArrayList<User>();
-                    for (User usr : users) {
+                    this.filteredCompanyUsers = new ArrayList<CompanyUser>();
+                    for (CompanyUser usr : CompanyUsers) {
                         if (usr.getCompany().equals(company)) {
-                            filteredUsers.add(usr);
+                            filteredCompanyUsers.add(usr);
                         }
                     }
-                    table.setItems(FXCollections.observableArrayList(this.filteredUsers));
+                    table.setItems(FXCollections.observableArrayList(this.filteredCompanyUsers));
                 });
                 topOptions.getChildren().add(companyButton);
             }
 
             table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
-            TableColumn<User, String> nameCol = new TableColumn<>("Username");
+
+            TableColumn<CompanyUser, String> nameCol = new TableColumn<>("Username");
             nameCol.setCellValueFactory(new PropertyValueFactory<>("username"));
             nameCol.setCellFactory(TextFieldTableCell.forTableColumn());
             nameCol.setOnEditCommit(event -> {
-                User user = event.getRowValue();
-                user.setUsername(event.getNewValue());
+                CompanyUser CompanyUser = event.getRowValue();
+                CompanyUser.setUsername(event.getNewValue());
                 table.refresh();
             });
 
-            TableColumn<User, String> orgUnitCol = new TableColumn<>("Organization Unit");
+            TableColumn<CompanyUser, String> orgUnitCol = new TableColumn<>("Organization Unit");
             orgUnitCol.setCellValueFactory(new PropertyValueFactory<>("orgUnit"));
             orgUnitCol.setCellFactory(TextFieldTableCell.forTableColumn());
             orgUnitCol.setOnEditCommit(event -> {
-                User user = event.getRowValue();
-                user.setOrgUnit(event.getNewValue());
+                CompanyUser CompanyUser = event.getRowValue();
+                CompanyUser.setOrgUnit(event.getNewValue());
                 table.refresh();
             });
 
-            TableColumn<User, String> groupCol = new TableColumn<>("Group");
+            /* 
+            TableColumn<CompanyUser, String> groupCol = new TableColumn<>("Group");
             groupCol.setCellValueFactory(new PropertyValueFactory<>("group")); 
             groupCol.setCellFactory(TextFieldTableCell.forTableColumn());
             groupCol.setOnEditCommit(event -> {
-                User user = event.getRowValue();
-                user.setGroup(event.getNewValue());
+                CompanyUser CompanyUser = event.getRowValue();
+                CompanyUser.setGroup(event.getNewValue());
 
                 table.refresh();
                 
-            });
+            });*/
 
-            TableColumn<User, Button> updateColumn = new TableColumn<>("Action");
+            TableColumn<CompanyUser,Button> updateColumn = new TableColumn<>("Action");
             updateColumn.setStyle("-fx-alignment: center;");
             updateColumn.setCellFactory(param -> new TableCell<>() {
                 private final Button updateButton = new Button("Update");
     
                 {
                     updateButton.setOnAction(event -> {
-                        User usr = getTableView().getItems().get(getIndex());
+                        CompanyUser usr = getTableView().getItems().get(getIndex());
                         usr.resetEdited();
                         getTableView().refresh();
                     });
@@ -129,22 +135,20 @@ public class UsersTable extends VBox {
                 protected void updateItem(Button item, boolean empty) {
                     super.updateItem(item, empty);
                     if (empty || !getTableView().getItems().get(getIndex()).isEdited()) {
-
                         setGraphic(null);
                     } else {
-                        User usr = users[getIndex()];
+                        CompanyUser usr = CompanyUsers[getIndex()];
                         usr.setPrevUsername(); 
                         String json = usr.getJSON();
                         System.out.println(json);
                         sav.sendSAV("update", json);
                         usr.resetEdited();
                         setGraphic(updateButton);
-                        
                     }
                 }
             });
 
-            table.getColumns().addAll(nameCol, orgUnitCol, groupCol, updateColumn);
+            table.getColumns().addAll(nameCol, orgUnitCol, updateColumn); //groupCol,
             this.getChildren().add(topOptions);
             this.getChildren().add(table);
             

@@ -7,7 +7,9 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -24,9 +26,17 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert.AlertType;
+import bankadmin.com.SAV;
 import bankadmin.json.JSONPayload;
 import bankadmin.json.ParseJSON;
 import bankadmin.ui.CenteredSpinner;
+import bankadmin.ui.LeftSidebar;
+import bankadmin.ui.tables.clients.Client;
+import bankadmin.ui.tables.clients.ClientsTable;
+import bankadmin.ui.tables.company.CompaniesTable;
+import bankadmin.ui.tables.company.Company;
+import bankadmin.ui.tables.company.users.CompanyUser;
+import bankadmin.ui.tables.company.users.CompanyUsersTable;
 
 public class Main extends Application {
 
@@ -36,12 +46,13 @@ public class Main extends Application {
     static private JFXPanel jfxPanel = new JFXPanel();
     //static private HBox actions = new HBox(5);
     static private CenteredSpinner spinner;
-
     static private boolean connError = false;
     static private SAV sav;
-    static private User[] users;
+    static private CompanyUser[] users;
     static private AdminSocket highSecSock;
     static private VBox tableVbox = new VBox(10);
+
+    static private LeftSidebar leftSidebar;
 
     static private void AddUser() {
         Platform.runLater(() -> {
@@ -116,12 +127,19 @@ public class Main extends Application {
     }
 
 
-    static private void showTableUI(User[] users) {
+    static private void showTableUI(CompanyUser[] users) {
         Platform.runLater(() -> {
             
             tableVbox.setStyle("-fx-alignment: center;");
-///////////// Users Table ////////////////////////
-            UsersTable usersTableView = new UsersTable(users, sav);
+///////////////////// Clients Table ///////////////////////////
+            List<Client> clients = List.of(
+                new Client("Dawid","Louis","Bekker","dawidbekker123@gmail.com","0605868794","09800987089")
+            );
+            ClientsTable clientsTable = new ClientsTable(clients, sav);
+
+///////////////////// Users Table /////////////////////////////
+            CompanyUsersTable usersTableView = new CompanyUsersTable(users, sav);
+
             usersTableView.setMaxWidth(700);
             usersTableView.setPrefWidth(700);
             
@@ -130,6 +148,7 @@ public class Main extends Application {
                 new Company("Company B"),
                 new Company("Company C")
             );
+
             CompaniesTable companiesTableView = new CompaniesTable(companies, sav);
             companiesTableView.setMaxWidth(700);
             companiesTableView.setPrefWidth(700);
@@ -155,29 +174,25 @@ public class Main extends Application {
 
 
 /////////////////// Left hand side bar //////////////////////////////
-            LeftSidebar leftSidebar = new LeftSidebar(toggleButton);
-
-            VBox options = new VBox(10);
-
-            Button showCompanyUsers = new Button();
-
-            Button showCompanies = new Button();
-
-            options.setPadding(new Insets(50, 0, 0, 0));
-            showCompanyUsers.setText("Company Users");
-            showCompanyUsers.autosize();
-            showCompanyUsers.setPrefWidth(Double.MAX_VALUE);
             
-            showCompanies.setText("Companies");
-            showCompanies.autosize();
-            showCompanies.setPrefWidth(Double.MAX_VALUE);
 
-            options.getChildren().addAll(showCompanyUsers,showCompanies);
-
-
-            leftSidebar.getChildren().add(options);
-
+            Map<String,Runnable> buttons = new HashMap<>() {{
+                put("Companies", () -> { 
+                    tableVbox.getChildren().clear();
+                    tableVbox.getChildren().add(companiesTableView);
+                 });
+                 put("Company Users", () -> {
+                    tableVbox.getChildren().clear();
+                    tableVbox.getChildren().addAll(usersTableView, actions);
+                 });
+                 put("Clients", () -> {
+                    tableVbox.getChildren().clear();
+                    tableVbox.getChildren().addAll(clientsTable);
+                 });
+            }};
             
+            LeftSidebar leftSidebar = new LeftSidebar(toggleButton,buttons);
+
             toggleButton.setStyle("-fx-font-size: 20px; -fx-background-color: #3498DB; -fx-text-fill: white;");
             toggleButton.setOnAction(e -> {
                 leftSidebar.toggleSidebar();
@@ -185,7 +200,9 @@ public class Main extends Application {
 
             StackPane.setAlignment(toggleButton, Pos.TOP_LEFT);
             StackPane.setMargin(toggleButton, new Insets(10));
-/////////////////// Table VBOX ////////////////////////////////////////
+
+////////////////////////////// Table VBOX /////////////////////////////////////////
+
             tableVbox.getChildren().addAll(usersTableView, actions);
 
             root.getChildren().addAll(toggleButton,leftSidebar,tableVbox);
@@ -199,46 +216,11 @@ public class Main extends Application {
                 Screen.getPrimary().getVisualBounds().getHeight()
             );
     
-            showCompanyUsers.setOnMousePressed(e -> {
-                ScaleTransition shrink = new ScaleTransition(Duration.millis(200),showCompanyUsers);
-                shrink.setToX(0.9);
-                shrink.setToY(0.9);
-                shrink.play();
-                tableVbox.getChildren().clear();
-                tableVbox.getChildren().addAll(usersTableView, actions);
-            });
-
-            showCompanyUsers.setOnMouseReleased(e -> {
-                ScaleTransition expand = new ScaleTransition(Duration.millis(200),showCompanyUsers);
-                expand.setToX(1);
-                expand.setToY(1);
-                expand.play();
-
-            });
-
-            showCompanies.setOnMousePressed(e -> {
-                ScaleTransition shrink = new ScaleTransition(Duration.millis(200), showCompanies);
-                shrink.setToX(0.9);
-                shrink.setToY(0.9);
-                shrink.play();
-                tableVbox.getChildren().clear();
-                tableVbox.getChildren().add(companiesTableView);
-
-            });
-
-            showCompanies.setOnMouseReleased(e -> {
-                ScaleTransition expand = new ScaleTransition(Duration.millis(200),showCompanies);
-                expand.setToX(1);
-                expand.setToY(1);
-                expand.play(); 
-            });
-
             leftSidebar.toFront();
-            options.toFront();
-            showCompanyUsers.toFront();
-            showCompanies.toFront();
             jfxPanel.setScene(scene);
+
         });
+
     }
     
 
@@ -296,11 +278,14 @@ public class Main extends Application {
                                 sav = new SAV(highSecSock.getOutputStream(),highSecSock.getInputStream());
                                 sav.setSubject("admins");
                                 sav.sendSAV("get");
-                                ParseJSON<User> parser = new ParseJSON<>(User.class);
+                                ParseJSON<CompanyUser> parser = new ParseJSON<>(CompanyUser.class);
                                 parser.parseJSONArray(sav.data);
                                 System.out.println("SAV data: " + sav.data);
                                 System.out.println("Parser data: " + parser.data);
-                                users = parser.data.toArray(new User[0]);
+                                for (CompanyUser usr : parser.data) {
+                                    usr.displayAll();
+                                }
+                                users = parser.data.toArray(new CompanyUser[0]);
                                 showTableUI(users);
                             }
                         } catch (Exception e) {

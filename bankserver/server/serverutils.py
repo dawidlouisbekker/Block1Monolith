@@ -18,7 +18,7 @@ from cryptography.hazmat.primitives import serialization
 
 from typing import List, Dict, Tuple
 
-from .db.models import getOracleDB, Admin,BankAdmin,bcrypt, Session
+from .db.models import getOracleDB, Admin , BankAdmin , BankClient , bcrypt, Session
 
 
 CURRENT_DIR_STR = os.getcwd()
@@ -224,7 +224,8 @@ class ClientSocketThread():
         self.__currentRecvPacket : bytes | None = None
         self.user : Client | None = None
         self.admin : bool = False
-    
+        self.badmn : bool = False
+        
     def gen_secure_key(self,length: int = 16) -> str:
         return ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(length))
     
