@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, BLOB, Engine, LargeBinary
+from sqlalchemy import create_engine, Column, String, Integer, Engine, LargeBinary, ForeignKey, Float
 from sqlalchemy.orm import declarative_base, Session, sessionmaker
 from sqlalchemy.engine import Engine
 import os
@@ -81,21 +81,56 @@ class Admin(Base):
     org_unit = Column(String(60),nullable=True)
     company = Column(String(60),nullable=True)
 
+
+
 class Client(Base):
     __tablename__ = "clients"
-    user_id = Column(Integer, autoincrement=True, primary_key=True)
-    firstname = Column(String)
-    middlename = Column(String)
-    
+    client_id = Column(Integer, autoincrement=True, primary_key=True)
+    firstname = Column(String(70))
+    middlename = Column(String(70))
+    last_name = Column(String(70))
+    email = Column(String(60))
+    cell_no = Column(String(13))
+    id_number = Column(String) 
 
 class Company(Base):
     __tablename__ = "companies"
-    name = Column(String(60),primary_key=True)
+    company_id = Column(Integer,autoincrement=True,primary_key=True)
+    name = Column(String(60))
     hashed_password = Column(LargeBinary)
     salt = Column(String(100))
     intmedCert = Column(LargeBinary)
     hashed_passphrase = Column(LargeBinary)
     intmdPrivKey = Column(LargeBinary)
+
+class Account(Base):
+    __tablename__ = "accounts"
+    account_id = Column(Integer,primary_key=True)
+    client_id =  Column(Integer,ForeignKey("clients.client_id"),nullable=True)
+    company_id = Column(Integer,ForeignKey("companies.client_id"),nullable=True)
+    balance = Column(Float)
+    
+class Transaction(Base):
+    __tablename__ = "transactions"
+    transaction_id = Column(Integer, autoincrement=True, primary_key=True)
+    acount_id = Column(Integer,ForeignKey("accounts.account_id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    reference = Column(String(100))
+    description = Column(String(200))
+    ref_transaction = Column(Integer,ForeignKey("transactions.transaction_id"))
+    
+class Group(Base):
+    __tablename__ = "company_groups"
+    company_id = Column(Integer,  ForeignKey("companies.company_id"))
+    group_name = Column(String(60), nullable=False)
+    group_code = Column(String(100), nullable=False)
+    
+
+    
+    
+    
+      
+
 
 class CompanyData:
     def __init__(self, name : str, engine : Engine):
