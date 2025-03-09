@@ -188,10 +188,10 @@ def selectSendFile():
 
 
 def selectDir(dirs : list[str]):
-    
     printAction(action="Selecting Directory")
     global options
     global selected_idx
+
     
     options = dirs
     selected_idx = min(max(selected_idx, 0), len(options) - 1)
@@ -209,15 +209,21 @@ def selectDir(dirs : list[str]):
 
 def connectFTP() -> socket.socket:
     resp = sock_cls.recieveJson()
-    ftpPort = resp["port"]
+    print("Response:",resp)
+
     ftpSock : socket.socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     print("")
     lg = colorsPrinter.makeLarge("CONNECTING")
     msg = f"{colorsPrinter.BLUE}FTP"
     colorsPrinter.logGreenAction(basemessage=lg,message=msg)
     print("")
-    ftpSock.connect((HOST,ftpPort))
-    colorsPrinter.logGreenAction(basemessage="CONNECTED")
+    try:
+        ftpPort = resp["port"]
+        ftpSock.connect((HOST,ftpPort))
+        colorsPrinter.logGreenAction(basemessage="CONNECTED")
+    except Exception as e:
+        print(e)
+        ftpSock.close() 
     return ftpSock
 
 def selectFile(files : list[str]): 
@@ -240,7 +246,8 @@ def UploadFile():
     global send_file_content
     global upload_file 
     global send_file
-
+    global dirStubs
+    
     if send_file_content == "" or send_file_content == None:
         colorsPrinter.logRedAction(basemessage="NO CONTENT",message="No file content.")
         upload_file = False
@@ -389,7 +396,7 @@ def print_menu(dirs: list[str] = [], files: list[str] = []):
             full_directory += f"/  {stub}  "
     full_directory += colorsPrinter.RESET
     print(f"{colorsPrinter.BLUE}CURRENT DIRECTORY: {colorsPrinter.YELLOW}{full_directory}{colorsPrinter.RESET}")
-
+    
     if select_dir:
         selectDir(dirs=dirs) 
     elif select_file:
@@ -540,14 +547,32 @@ def connectClient(username : str, password : str | None = None):
         while options[selected_idx] != "Exit":
             try:
                 while choosen_idx is None:
-                    if not send_file:
-                        options  = sock_cls.files[currentDir] + sock_cls.directories[currentDir] + actionOptions
-                        print_menu(files=sock_cls.files[currentDir], dirs=sock_cls.directories[currentDir])
-                    else:
-                        print_menu()
+                    try:
+                        if not send_file:
+                            options = []
+                            files = []
+                            directories = []
+                            total_files = 0
+                            total_dirs = 0
+                            if sock_cls.files.get(currentDir) is not None:
+                                options = sock_cls.files[currentDir]
+                                files = sock_cls.files[currentDir]
+                                total_files = len(sock_cls.files[currentDir])
+                                
+                            if sock_cls.directories.get(currentDir) is not None:
+                                options = options + sock_cls.directories[currentDir]
+                                directories = sock_cls.directories[currentDir]
+                                total_dirs = len(sock_cls.directories[currentDir])
+                                
+                            options = options + actionOptions                        
+                            print_menu(files=files, dirs=directories)
+                        else:
+                            print_menu()
+                    except Exception as e:
+                        print("Error in top",e)
                         
-                    total_files = len(sock_cls.files[currentDir])
-                    total_dirs = len(sock_cls.directories[currentDir])
+                    
+                    
                     total_options = total_files + total_dirs + len(actionOptions)
                     #print("Len dir:",total_dirs)
                     key = readchar.readkey()
@@ -572,10 +597,10 @@ def connectClient(username : str, password : str | None = None):
                         try:
                             if select_dir:
                                 try:
-                                    if len(options) != 0:
+                                    if len(options) != 0 and sock_cls.directories.get(currentDir) is not None:
                                         selected_dir = options[selected_idx]
                                         print(f"Selected {colorsPrinter.YELLOW}DIRECTORY{colorsPrinter.RESET}:",selected_dir)
-                                        sock_cls.sendJson({ "subject" : "directory", "action" : "delete", "value" : selected_dir, "stubs" : dirStubs })
+                                        sock_cls.sendJson({ "subject" : "directory", "action" : "delete", "value" : selected_dir  })
                                         success = sock_cls.checkState()
                                         if success:
                                             sock_cls.directories[currentDir].remove(selected_dir)
@@ -583,8 +608,10 @@ def connectClient(username : str, password : str | None = None):
                                         selected_idx = 0
                                     else:
                                         colorsPrinter.logRedAction(basemessage="NO DIRECTORIES")
+                                        time.sleep(1)
                                 except Exception as e:
                                     print(e)
+                                    time.sleep(1)
                                     
                             elif send_file:
                                 match sendFileOptions[selected_idx]:
@@ -598,6 +625,7 @@ def connectClient(username : str, password : str | None = None):
                                         select_file = False
                                         sending_file_path = None
                                         send_file_content = None
+                                        
                                     case "Reselect":
                                         sending_file_path = None
                                         send_file_content = None             
@@ -626,7 +654,10 @@ def connectClient(username : str, password : str | None = None):
                                             if len(dirStubs) == 0:
                                                 currentDir = "/"
                                             else: 
-                                                currentDir = dirStubs[len(dirStubs) - 1 ]
+                                                currentDir = "".join(dirStubs)
+                                            sock_cls.sendJson({ "subject" : "directory", "action" : "back"})
+                                            
+                                            
                                                 
                                 elif selected_idx < total_files:
                                     try:
@@ -640,11 +671,24 @@ def connectClient(username : str, password : str | None = None):
                                         time.sleep(0.5)
                                 elif selected_idx < (total_files + total_dirs):
                                     try:
-                                        currentDir = options[selected_idx]
                                         dirStubs.append(options[selected_idx])
+                                        currentDir = "".join(dirStubs)
+                                        if not sock_cls.directories[currentDir]:
+                                            sock_cls.sendJson({ "subject" : "directory", "action" : "next", "value" : options[selected_idx] })
+                                            tempdirs = sock_cls.directories
+                                            recvd_entities : dict = sock_cls.recieveJson()
+                                            files = recvd_entities["files"]
+                                            dirs = recvd_entities["dirs"]
+                                            for sdir in dirs:
+                                                sdir = currentDir + sdir
+                                                sock_cls.directories.update({ sdir : [] })
+                                            sock_cls.directories.update({ currentDir : dirs })
+                                            sock_cls.files.update({ currentDir : files })
+                                        sock_cls.directories = tempdirs
                                         selected_idx = 0
                                     except Exception as e:
                                         print(e) 
+                                        time.sleep(5)
                                         
                                     
                                     
@@ -653,10 +697,11 @@ def connectClient(username : str, password : str | None = None):
                         finally:
                             time.sleep(0.1)
                             choosen_idx = None
-                            
-                        if options[selected_idx] == "Exit":
-                            break
-                            
+                        try:
+                            if options[selected_idx] == "Exit":
+                                break
+                        except Exception as e:
+                            print("Error in exit option:",e)
             except Exception as e:
                 print("Error while choosing index:",e)
                 

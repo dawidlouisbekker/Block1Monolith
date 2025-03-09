@@ -155,13 +155,30 @@ def getUserFiles(username : str,entries : List[str]) -> List[str]:
                 files.append(entry)   
     except Exception as e:
         colorsPrinter.logRedAction(basemessage="FUNCTION REQUIRES",message=e)
-        
-def GetEntities(username: str, dir: str = "/") -> Tuple[Dict, Dict]:
-    # Construct the correct directory path
-    path = BASE_PATH / username if dir == "/" else BASE_PATH / username / dir
 
-    if not path.exists() or not path.is_dir():
-        return {}, {}  # Return empty dictionaries if the path doesn't exist
+def getFilesAndDirs(username: str, path : Path | None = None) -> tuple[list[str],list[str]]:
+    # Construct the correct directory path
+    if path is None:
+        path = BASE_PATH / username if dir == "/" else BASE_PATH / username / dir
+
+        if not path.exists() or not path.is_dir():
+            return {}, {}  # Return empty dictionaries if the path doesn't exist
+
+    entities = list(path.iterdir())  # Use pathlib to list entities
+
+    # Separate files and directories
+    files = [entity.name for entity in entities if entity.is_file()]
+    dirs = [entity.name for entity in entities if entity.is_dir()]
+
+    return files, dirs 
+
+def GetEntities(username: str, path : Path | None = None ,dir: str = "/") -> Tuple[Dict, Dict]:
+    # Construct the correct directory path
+    if path is None:
+        path = BASE_PATH / username if dir == "/" else BASE_PATH / username / dir
+
+        if not path.exists() or not path.is_dir():
+            return {}, {}  # Return empty dictionaries if the path doesn't exist
 
     entities = list(path.iterdir())  # Use pathlib to list entities
 
@@ -221,7 +238,7 @@ class ClientSocketThread():
                 success = True
             except Exception as e:
                 print("Error starting ftp:",e)
-                prnt = colorsPrinter.YELLOW + "STARTING FTP SERVICE" + colorsPrinter.RESET + "  |  " + colorsPrinter.YELLOW + "PORT: " + colorsPrinter.RESET + str(FTP_PORT)  + "   |  " + colorsPrinter.BLUE + self.user.username + colorsPrinter.RESET + "  |  "  + self.addr[0] + ":" + str(self.addr[1])
+                prnt = colorsPrinter.YELLOW + "STARTING SERVICE" + colorsPrinter.RESET + "  |  " + colorsPrinter.YELLOW + "PORT: " + colorsPrinter.RESET + str(FTP_PORT)  + "   |  " + colorsPrinter.BLUE + self.user.username + colorsPrinter.RESET + "  |  "  + self.addr[0] + ":" + str(self.addr[1])
                 print(prnt)
         return FTP_PORT
     
@@ -231,6 +248,7 @@ class ClientSocketThread():
         self.ftpSocket = ftpSock
         key = self.gen_secure_key()
         print("Key:",key)
+        print("Port:",FTP_PORT)
         self.sendJson(message={ "port" : FTP_PORT, "key" : key })
         return ftpSock
         
@@ -246,7 +264,7 @@ class ClientSocketThread():
             if self.ftpSocket is not None:
                 self.ftpSocket.close()
                 colorsPrinter.logGreenAction(basemessage="\n DISCONNECTED",addr=self.addr,message="TCP FTP Socket")
-   
+             
             if self.user is not None:
                 self.user = None
         except Exception as e:

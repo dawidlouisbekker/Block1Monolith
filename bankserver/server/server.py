@@ -1,4 +1,4 @@
-from .serverutils import ClientSocketThread,clientManager, colorsPrinter,os, getOracleDB,  bcrypt, socket, BASE_PATH
+from .serverutils import ClientSocketThread,clientManager, colorsPrinter,os, getOracleDB,  bcrypt, socket, BASE_PATH, GetEntities, getFilesAndDirs, time
 from .serverutils import BankAdmin, Admin
 from .adminutils import AdminSocketThread,BankAdminSocketThread
 from pathlib import Path
@@ -6,10 +6,11 @@ from pathlib import Path
 CURRENT_DIR_STR = os.getcwd()
 BASE_PATH = Path(CURRENT_DIR_STR) / Path("server") / Path("files")
 
+#Changed to currentDir
 def CreateDirectory(username: str, directoryName: str, currentDir: str | Path = "/") -> tuple[str, bool]:
     if "/" in directoryName:
         return (f"{colorsPrinter.RED}INVALID NAME{colorsPrinter.RESET}. No '/' or './' in the name", False)
-    create_path = BASE_PATH / username / directoryName
+    create_path = currentDir / directoryName
     print("Creating path:",create_path)
     if os.path.exists(create_path):
         return ("Path already exists.", False)
@@ -17,10 +18,11 @@ def CreateDirectory(username: str, directoryName: str, currentDir: str | Path = 
     os.mkdir(create_path)
     return (f"Created path: {directoryName}", True)
         
-def DeleteDirectory(username: str, directoryName: str, currentDir: str = "/")  -> tuple[str, bool]:
+def DeleteDirectory(username: str, directoryName: str, currentDir: str = "/", delete_path : Path | None = None)  -> tuple[str, bool]:
     if "/" in directoryName:
         return (f"{colorsPrinter.RED}INVALID NAME{colorsPrinter.RESET}. No '/' or './' in the name", False)
-    delete_path = BASE_PATH / username / directoryName
+    if delete_path is None:
+        delete_path = BASE_PATH / username / directoryName
     print("Deleting path:",delete_path)
     if os.path.exists(delete_path):
         os.rmdir(path=delete_path)
@@ -29,56 +31,71 @@ def DeleteDirectory(username: str, directoryName: str, currentDir: str = "/")  -
         return ("Path does not exist.", False)
 
 
-def getPath(name : str, stubs : list[str]) -> Path:
-    base = Path(name)
+def getPath( name : str, stubs : list[str], file_name : str | None = None) -> Path:
+    base = BASE_PATH / name 
     for stub in stubs:
         base = base / stub
+    if file_name is not None:
+        base = base / file_name
     return base
 
 def handleClient(client : ClientSocketThread, addr):
     message : str | None = None
     colorsPrinter.logGreenAction(addr=addr,basemessage="CONNECTED",message="TCP AUTH socket")
     ftpSock : socket.socket | None = None
+    
+    
     def handle_invalid_value():
         client.sendJson(message={"message": "Invalid value.", "state": False})
         return False
+    
     checkVal = lambda x: True if x is not None else handle_invalid_value()
+    
     try:
         message = client.receiveMessage(baseMessage="LOGGEDIN",logMsg=True)
         try:
             client.EstablishUser(username=message)
+            currentDir : Path = BASE_PATH / client.user.username
             try:
                 while True:
                     msgdict = client.recieveJson()
                     print(msgdict)
+                    print("Current directory:",currentDir)
                     subject = msgdict.get("subject")
                     action = msgdict.get("action")
-                    
-
                     if subject and action:
                         match subject:
                             case "directory":
-                                value = msgdict.get("value")
-                                stubs = msgdict.get("stubs")
-                                base_path = getPath(name=client.user.username,stubs=stubs)
-                                if action == "create" and checkVal(value):
-                                    try:
-                                        result = CreateDirectory(username=client.user.username,directoryName=value)
-                                        client.sendJson(message={ "message" : result[0], "state" : result[1] })
-                                    except Exception as e:
-                                        print(e)
-                                        client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
-                                #Required permission
-                                if action == "delete":
-                                    try:
-                                        result = DeleteDirectory(username=client.user.username,directoryName=value)
-                                        client.sendJson(message={ "message" : result[0], "state" : result[1] })
-                                    except Exception as e:
-                                        print(e)
-                                        client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+                                if action == "back":
+                                    currentDir = currentDir.parent
+                                else:
+                                    value = msgdict.get("value")
+                                    if action == "create" and checkVal(value):
+                                        try:                     
+                                            result = CreateDirectory(username=client.user.username,directoryName=value,currentDir=currentDir)
+                                            client.sendJson(message={ "message" : result[0], "state" : result[1] })
+                                        except Exception as e:
+                                            print(e)
+                                            time.sleep(2)
+                                            client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+                                    #Required permission
+                                    if action == "delete" and checkVal(value):
+                                        try:
+                                            del_dir = currentDir / value
+                                            result = DeleteDirectory(username=client.user.username,directoryName=value,delete_path=del_dir)
+                                            client.sendJson(message={ "message" : result[0], "state" : result[1] })
+                                        except Exception as e:
+                                            print(e)
+                                            client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+                                    if action == "next" and checkVal(value):
+                                        currentDir = currentDir / value
+                                        files, dirs = getFilesAndDirs(username=client.user.username,path=currentDir)
+                                        payload = { "files" : files, "dirs" : dirs }
+                                        client.sendJson(payload)
                             case "file":
                                 if action == "est":
                                     #create 
+                                    value = msgdict.get("value")
                                     if value is not None:
                                         size : int = 0
                                         try:
@@ -91,6 +108,7 @@ def handleClient(client : ClientSocketThread, addr):
                                             except:
                                                 client.sendJson(message={ "message" : "Invalid name file name.", "state" : True })
                                                 file_name = None
+
                                             if file_name != None:
                                                 size = int(value)
                                                 ftpSock = client.StartFTP()
@@ -105,15 +123,16 @@ def handleClient(client : ClientSocketThread, addr):
                                                         for i in range(rounds):
                                                             cacheLine = ftp_client.recv(64)
                                                             file = file + cacheLine.decode('utf-8')
-                                                        print(file)
-                                                        try:
-                                                            file_path = os.path.join(BASE_PATH,client.user.username,file_name)
+                                                        #print(file)
+                                                        try:    
+                                                            file_path = currentDir / file_name
+                                                            print("PATH:",file_path)
                                                             with open(file_path,"w+") as f:
                                                                 f.write(file)
                                                                 f.close()
                                                             client.sendJson(message={ "message" : "Recieved file.", "state" : True })
                                                         except:
-                                                            client.sendJson(message={ "message" : "File saved successfully.", "state" : False })
+                                                            client.sendJson(message={ "message" : "Failed to save file.", "state" : False })
                                                     except:
                                                         print("Error receiving file.")
                                                         client.sendJson(message={ "message" : "File transfer failed.", "state" : False })
@@ -149,7 +168,7 @@ def handleClient(client : ClientSocketThread, addr):
                                             try:
                                                 ftp_client, addr = ftpSock.accept()
                                                 try:
-                                                    file_path = os.path.join(BASE_PATH,client.user.username,file_name)
+                                                    file_path = currentDir / file_name
                                                     size = os.path.getsize(file_path)
                                                     with open(file_path, "rb") as file:
                                                         client.sendMessage(str(size))
@@ -239,7 +258,6 @@ def handleAdmin(client_thread : ClientSocketThread, addr):
                             case "directory":
                                 value = msgdict.get("value")
                                 if action == "create" and checkVal(value):
-                                    
                                     try:
                                         result = CreateDirectory(username=admin_sock.user.username,directoryName=value)
                                         admin_sock.sendJson(message={ "message" : result[0], "state" : result[1] })
@@ -247,13 +265,14 @@ def handleAdmin(client_thread : ClientSocketThread, addr):
                                         print(e)
                                         admin_sock.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
 
-                                if action == "delete":
+                                if action == "delete" and checkVal(value):
                                     try:
                                         result = DeleteDirectory(username=admin_sock.user.username,directoryName=value)
                                         admin_sock.sendJson(message={ "message" : result[0], "state" : result[1] })
                                     except Exception as e:
                                         print(e)
-                                        admin_sock.sendJson(message={ "message" : "Failed to create directory.", "state" : False })    
+                                        admin_sock.sendJson(message={ "message" : "Failed to create directory.", "state" : False })
+ 
                             case "admins":
                                 match action:
                                     case "get":

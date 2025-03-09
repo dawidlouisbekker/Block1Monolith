@@ -321,7 +321,7 @@ public class Main extends Application {
         
             // Add the TextField, PasswordField, and Button to the VBox
             loginVbox.getChildren().addAll(loginLabel, idInput, phraseInput,passwordInput, loginButton);
-        
+
             // Create a Scene with the VBox
             Scene scene = new Scene(loginVbox, 300, 200); // Adjust width of the scene as needed
             jfxPanel.setScene(scene); 
