@@ -32,7 +32,7 @@ public class ClientsTable extends VBox {
     private SAV sav;
     private JSONPayload payload = new JSONPayload(JSONType.OBJECT);
 
-    public ClientsTable(List<Client> clients,SAV sav) {
+    public ClientsTable(Client[] clients,SAV sav) {
         this.sav = sav;
 
         TableView<Client> table = new TableView<>();

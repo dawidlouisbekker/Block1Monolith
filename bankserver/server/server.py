@@ -259,34 +259,59 @@ def handleAdmin(client_thread : ClientSocketThread, addr):
                     if subject and action:
                         match subject:
                             case "client":
-                                value : dict = msgdict.get("value")
-                                firstname = value.get("firstname")
-                                middlename = value.get("middlename")
-                                lastname = value.get("lastname")
-                                email = value.get("email")
-                                cellNo = value.get("cellNo")
-                                idNumber = value.get("idNumber")
-                                password = value.get("password")
-                                print(f"Firstname: {firstname}, Middlename: {middlename}, Lastname: {lastname}, Email: {email}, Cell No: {cellNo}, ID Number: {idNumber}, Password: {password}")
-                                db = getOracleDB()
-                                salt = gensalt()
-                                hashed_password = hashpw(password=password.encode('utf-8'),salt=salt)
-                                try:
-                                    client = BankClient(
-                                        firstname=firstname,
-                                        middlename=middlename,
-                                        lastname=lastname,
-                                        email=email,
-                                        cellNo=cellNo,
-                                        idNumber=idNumber,
-                                        hashed_passwd = hashed_password,
-                                        salt=salt
-                                    )
-                                except Exception as e:
-                                    print(e)
-                                finally:
-                                    db.close()
-
+                                if action == "action":
+                                    value : dict = msgdict.get("value")
+                                    firstname = value.get("firstname")
+                                    middlename = value.get("middlename")
+                                    lastname = value.get("lastname")
+                                    email = value.get("email")
+                                    cellNo = value.get("cellNo")
+                                    idNumber = value.get("idNumber")
+                                    password = value.get("password")
+                                    print(f"Firstname: {firstname}, Middlename: {middlename}, Lastname: {lastname}, Email: {email}, Cell No: {cellNo}, ID Number: {idNumber}, Password: {password}")
+                                    db = getOracleDB()
+                                    salt = gensalt()
+                                    hashed_password = hashpw(password=password.encode('utf-8'),salt=salt)
+                                    try:
+                                        client = BankClient(
+                                            firstname=firstname,
+                                            middlename=middlename,
+                                            last_name=lastname,
+                                            email=email,
+                                            cell_no=cellNo,
+                                            id_number=idNumber,
+                                            hashed_passwd = hashed_password,
+                                            salt=salt
+                                        )
+                                        db.add(client)
+                                        db.commit()
+                                        db.refresh(client)
+                                        
+                                    except Exception as e:
+                                        print(e)
+                                    finally:
+                                        db.close()
+                                elif action == "get":
+                                    db = getOracleDB()
+                                    try:
+                                        clients = db.query(BankClient).all()
+                                        clients_payload : dict = {}
+                                        for client in clients:
+                                            client_payload : dict = {
+                                                "firstname" : client.firstname,
+                                                "middlename" : client.middlename,
+                                                "last_name" : client.last_name,
+                                                "email" : client.email,
+                                                "cell_no" : client.cell_no,
+                                                "id_number" : client.id_number
+                                            }
+                                            clients_payload.update(client_payload)
+                                        admin_sock.sendJson(clients_payload)
+                                    except Exception as e:
+                                        print(e)
+                                    finally:
+                                        db.close()
+                                        
                             case "directory":
                                 value = msgdict.get("value")
                                 if action == "create" and checkVal(value):

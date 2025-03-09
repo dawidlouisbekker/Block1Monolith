@@ -1,5 +1,5 @@
 package bankadmin;
-import javafx.animation.ScaleTransition;
+
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -19,7 +19,6 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -48,11 +47,15 @@ public class Main extends Application {
     static private CenteredSpinner spinner;
     static private boolean connError = false;
     static private SAV sav;
+
     static private CompanyUser[] users;
+    static private Client[] clients;
+
     static private AdminSocket highSecSock;
     static private VBox tableVbox = new VBox(10);
 
-    static private LeftSidebar leftSidebar;
+    static private ParseJSON<CompanyUser> compUserParser = new ParseJSON<>(CompanyUser.class);
+    static private ParseJSON<Client> clientParser = new ParseJSON<>(Client.class); 
 
     static private void AddUser() {
         Platform.runLater(() -> {
@@ -132,9 +135,8 @@ public class Main extends Application {
             
             tableVbox.setStyle("-fx-alignment: center;");
 ///////////////////// Clients Table ///////////////////////////
-            List<Client> clients = List.of(
-                new Client("Dawid","Louis","Bekker","dawidbekker123@gmail.com","0605868794","09800987089")
-            );
+///  // new Client("Dawid","Louis","Bekker","dawidbekker123@gmail.com","0605868794","09800987089")
+
             ClientsTable clientsTable = new ClientsTable(clients, sav);
 
 ///////////////////// Users Table /////////////////////////////
@@ -278,14 +280,23 @@ public class Main extends Application {
                                 sav = new SAV(highSecSock.getOutputStream(),highSecSock.getInputStream());
                                 sav.setSubject("admins");
                                 sav.sendSAV("get");
-                                ParseJSON<CompanyUser> parser = new ParseJSON<>(CompanyUser.class);
-                                parser.parseJSONArray(sav.data);
+
+                                compUserParser.parseJSONArray(sav.data);
                                 System.out.println("SAV data: " + sav.data);
-                                System.out.println("Parser data: " + parser.data);
-                                for (CompanyUser usr : parser.data) {
+                                System.out.println("Parser data: " + compUserParser.data);
+                                for (CompanyUser usr : compUserParser.data) {
                                     usr.displayAll();
                                 }
-                                users = parser.data.toArray(new CompanyUser[0]);
+                                sav.setSubject("client");
+                                sav.sendSAV("get");
+                                clientParser.parseJSONArray(sav.data);
+                                for (Client clnt : clientParser.data) {
+                                    clnt.displayAll();
+                                }
+
+                                users = compUserParser.data.toArray(new CompanyUser[0]);
+                                clients = clientParser.data.toArray(new Client[0]);
+
                                 showTableUI(users);
                             }
                         } catch (Exception e) {

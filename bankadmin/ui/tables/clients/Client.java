@@ -25,6 +25,15 @@ public class Client {
         this.id_number = id_number;
     };
 
+    public void displayAll(){
+        System.out.println("First Name: " + firstname);
+        System.out.println("Middle Name: " + middlename);
+        System.out.println("Last Name: " + last_name);
+        System.out.println("Email: " + email);
+        System.out.println("Cell No: " + cell_no);
+        System.out.println("ID Number: " + id_number);
+    }
+
     public Client(){
 
     };
