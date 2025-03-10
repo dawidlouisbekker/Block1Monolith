@@ -1,13 +1,10 @@
 package bankadmin.ui;
-import bankadmin.AdminSocket;
 import javafx.embed.swing.JFXPanel;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.Spinner;
 import javafx.scene.layout.StackPane;
-import javafx.scene.control.ProgressIndicator;
 
 public class CenteredSpinner extends StackPane {
 

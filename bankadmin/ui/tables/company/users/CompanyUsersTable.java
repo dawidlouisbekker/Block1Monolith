@@ -22,8 +22,8 @@ public class CompanyUsersTable extends VBox {
     private HBox actions = new HBox(5);
 
     private CompanyUser[] CompanyUsers;
-    private List<CompanyUser> filteredCompanyUsers;
-    private List<String> companies;
+    private List<CompanyUser> data = new ArrayList<CompanyUser>();
+    public List<String> companies;
     private String selectedCompany;
 
     void addCompanyUser() {
@@ -44,12 +44,26 @@ public class CompanyUsersTable extends VBox {
 
     }
 
-
+    public void setSelectedCompany(String company) {
+        this.selectedCompany = company;
+        if (company.equals("All")) {
+            table.setItems(FXCollections.observableArrayList(this.CompanyUsers));
+            return;
+        }
+        this.selectedCompany = company;
+        for (CompanyUser usr : CompanyUsers) {
+            if (usr.getCompany().equals(company)) {
+                data.add(usr);
+            }
+        }
+        table.setItems(FXCollections.observableArrayList(this.data));
+    }
 
     public CompanyUsersTable(CompanyUser[] CompanyUsers, SAV sav) {
         this.CompanyUsers = CompanyUsers;
         this.companies = new ArrayList<>();
         this.companies.add("All");
+
         for (CompanyUser usr : CompanyUsers) {
             if (usr.getCompany() != null) {
                 String company = usr.getCompany();
@@ -58,6 +72,7 @@ public class CompanyUsersTable extends VBox {
                 }
             }
         }
+
         this.CompanyUsers = CompanyUsers;
         Platform.runLater(() -> {
             table = new TableView<>();
@@ -75,13 +90,12 @@ public class CompanyUsersTable extends VBox {
                         return;
                     }
                     this.selectedCompany = company;
-                    this.filteredCompanyUsers = new ArrayList<CompanyUser>();
                     for (CompanyUser usr : CompanyUsers) {
                         if (usr.getCompany().equals(company)) {
-                            filteredCompanyUsers.add(usr);
+                            data.add(usr);
                         }
                     }
-                    table.setItems(FXCollections.observableArrayList(this.filteredCompanyUsers));
+                    table.setItems(FXCollections.observableArrayList(this.data));
                 });
                 topOptions.getChildren().add(companyButton);
             }

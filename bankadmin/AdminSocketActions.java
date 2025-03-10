@@ -14,7 +14,7 @@ public class AdminSocketActions {
     static public void displayActionResult(String Title, String header,String Text, AlertType type) {
         Alert alert = new Alert(type);  // Type of pop-up
         alert.setTitle(Title);
-        alert.setHeaderText(header);  // No header
+        alert.setHeaderText(header);
         alert.setContentText(Text);
         alert.showAndWait();  // Display the pop-up and wait for user interaction
     }

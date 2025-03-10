@@ -7,6 +7,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -56,6 +58,11 @@ public class Main extends Application {
 
     static private ParseJSON<CompanyUser> compUserParser = new ParseJSON<>(CompanyUser.class);
     static private ParseJSON<Client> clientParser = new ParseJSON<>(Client.class); 
+
+    @FunctionalInterface
+    public interface SetCompany {
+        void setCompany(String cmpny);
+    }
 
     static private void AddUser() {
         Platform.runLater(() -> {
@@ -179,10 +186,6 @@ public class Main extends Application {
             
 
             Map<String,Runnable> buttons = new HashMap<>() {{
-                put("Companies", () -> { 
-                    tableVbox.getChildren().clear();
-                    tableVbox.getChildren().add(companiesTableView);
-                 });
                  put("Company Users", () -> {
                     tableVbox.getChildren().clear();
                     tableVbox.getChildren().addAll(usersTableView, actions);
@@ -192,8 +195,22 @@ public class Main extends Application {
                     tableVbox.getChildren().addAll(clientsTable);
                  });
             }};
-            
-            LeftSidebar leftSidebar = new LeftSidebar(toggleButton,buttons);
+            List<Pair<String,Runnable>> companyBtns = new ArrayList<>();
+
+            SetCompany cmpnyLambda = (String cmpny) -> {
+                tableVbox.getChildren().clear();
+                tableVbox.getChildren().add(companiesTableView);
+                usersTableView.setSelectedCompany(cmpny);
+            };
+
+            for (String cmpny : usersTableView.companies) {
+                companyBtns.add(new Pair<String,Runnable>(cmpny, () -> cmpnyLambda.setCompany(cmpny)));
+            }
+
+            Map<String,Pair<String,Runnable>[]> dropDowns = new HashMap<>() {{
+                put("Companies", companyBtns.toArray(new Pair[0]));
+            }};
+            LeftSidebar leftSidebar = new LeftSidebar(buttons,dropDowns);
 
             toggleButton.setStyle("-fx-font-size: 20px; -fx-background-color: #3498DB; -fx-text-fill: white;");
             toggleButton.setOnAction(e -> {
@@ -350,7 +367,6 @@ public class Main extends Application {
     
     public static void main(String[] args) {
         try {
-           //(new Sample(), "{ \"id\": 42, \"name\": \"John Doe\", \"balance\": 1000.75 }");
             
             AdminSocket adminSocket = new AdminSocket("localhost", 5024, "./bankadmin/client_cert.pem", "./bankadmin/client_key.pem","","");
             socketActions = new AdminSocketActions(adminSocket,jfxPanel);

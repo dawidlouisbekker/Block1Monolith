@@ -2,7 +2,7 @@ import threading
 
 from server import ActivateServer, newBankAdminForm
 #From serverutils
-from server import StopServerException, HOST, PORT, ADMIN_PORT, socket, os, createSSLContext, createAdminSSLContext
+from server import StopServerException, HOST, PORT, ADMIN_PORT, socket, os, createSSLContext, createAdminSSLContext, ConType
 import sys
 import signal
 
@@ -25,8 +25,9 @@ if __name__ == "__main__":
         admin_sock = createAdminSSLContext(socket.socket(socket.AF_INET,socket.SOCK_STREAM))
         admin_sock.bind((HOST,ADMIN_PORT))
         
-        server_thread = threading.Thread(target=ActivateServer,args=(sock,), daemon=True)
-        server_admin_thread = threading.Thread(target=ActivateServer,args=(admin_sock,True,), daemon=True)
+        server_thread = threading.Thread(target=ActivateServer,args=(sock,ConType.FTP), daemon=True)
+        server_admin_thread = threading.Thread(target=ActivateServer,args=(admin_sock,ConType.BANKADMIN,), daemon=True)
+        #Set up UDP
         
         server_thread.start()
         server_admin_thread.start()

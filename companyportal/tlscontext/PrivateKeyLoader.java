@@ -1,4 +1,4 @@
-package bankadmin;
+package companyportal.tlscontext;
 import java.nio.file.*;
 import java.security.*;
 import java.security.spec.*;
@@ -24,8 +24,7 @@ public class PrivateKeyLoader {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePrivate(keySpec);
         } catch (InvalidKeySpecException e) {
-            // If loading as PKCS#8 fails, check if the key is in PKCS#1 format
-            throw new InvalidKeySpecException("Unable to decode the private key. Set to PKCS#8 when generating the key.");
+                throw new InvalidKeySpecException("Unable to decode the private key. Set to PKCS#8 when generating the key.");
         }
     }
 

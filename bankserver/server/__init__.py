@@ -4,9 +4,15 @@ from .serverutils import newBankAdminForm
 from .server import handleClient, handleAdmin
 from .serverutils import HOST, PORT, ADMIN_PORT
 
+from enum import Enum
+
+class ConType(Enum):
+    BANKADMIN = "bankadmin"
+    COMPANY = "company"
+    FTP = "ftp"
 
 
-def ActivateServer(sock : ssl.SSLSocket | None, admin : bool = False):
+def ActivateServer(sock : ssl.SSLSocket | None, conType : ConType):
     #context = ssl.create_default_context()
     if sock is None:
         print("No server socket received")
@@ -22,12 +28,15 @@ def ActivateServer(sock : ssl.SSLSocket | None, admin : bool = False):
                 client_sock , addr = sock.accept()
                 socket_class = ClientSocketThread(sock=client_sock,addr=addr)
                 clientManager.addClient(socket_class)
-                if admin:
-                    admin_thread = threading.Thread(target=handleAdmin,args=(socket_class,addr,),daemon=True)
-                    admin_thread.start()
-                else:
-                    client_thread = threading.Thread(target=handleClient,args=(socket_class,addr,),daemon=True)
-                    client_thread.start()
+                match conType:
+                    case ConType.BANKADMIN:
+                        admin_thread = threading.Thread(target=handleAdmin,args=(socket_class,addr,),daemon=True)
+                        admin_thread.start()
+                    case ConType.FTP:
+                        client_thread = threading.Thread(target=handleClient,args=(socket_class,addr,),daemon=True)
+                        client_thread.start()
+                    case ConType.COMPANY:
+                        pass
 
         except StopServerException:
             pass

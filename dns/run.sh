@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Compile the C++ code using g++
-g++ dnscache.cpp -o dnscache.out
+g++ RecursiveResolver.cpp -o ecursiveResolver.out
 
 # Check if the compilation was successful
 if [ $? -eq 0 ]; then
     echo "Compilation successful! Running the program..."
     # Run the compiled executable
-    ./dnscache.out
+    ./RecursiveResolver.out
 else
     echo "Compilation failed!"
 fi
