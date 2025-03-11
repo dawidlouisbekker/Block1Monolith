@@ -277,7 +277,11 @@ def UploadFile():
             print("")
             send_file_content = None
             success = sock_cls.checkState()
-            print(f" {colorsPrinter.YELLOW}DONE{colorsPrinter.RESET}")
+            if success:
+                sock_cls.files[currentDir].append(sel_file_name)
+                print(f" {colorsPrinter.YELLOW}DONE{colorsPrinter.RESET}")
+            else:
+                colorsPrinter.logRedAction("FAILED TO UPLOAD FILE")
             print("\n Press enter to continue...")
             while True:
                 key = readchar.readkey()
@@ -592,7 +596,9 @@ def connectClient(username : str, password : str | None = None):
                             
                         elif select_file == False and selected_idx < total_options - 1:
                             selected_idx += 1
+                            
                     #All actions. Also processed in display menu's functions
+                    
                     elif key == readchar.key.ENTER:
                         try:
                             if select_dir:
@@ -649,6 +655,7 @@ def connectClient(username : str, password : str | None = None):
                                         case "Send File":
                                             send_file = True
                                             selected_idx = 0
+
                                         case "Back":
                                             dirStubs.pop()
                                             if len(dirStubs) == 0:
@@ -673,18 +680,14 @@ def connectClient(username : str, password : str | None = None):
                                     try:
                                         dirStubs.append(options[selected_idx])
                                         currentDir = "".join(dirStubs)
-                                        if not sock_cls.directories[currentDir]:
-                                            sock_cls.sendJson({ "subject" : "directory", "action" : "next", "value" : options[selected_idx] })
-                                            tempdirs = sock_cls.directories
+                                        sock_cls.sendJson({ "subject" : "directory", "action" : "next", "value" : options[selected_idx] })
+                                        if not sock_cls.directories.get(currentDir):
+                                            sock_cls.sendJson({ "subject" : "directory", "action" : "get", "value" : options[selected_idx] })
                                             recvd_entities : dict = sock_cls.recieveJson()
                                             files = recvd_entities["files"]
-                                            dirs = recvd_entities["dirs"]
-                                            for sdir in dirs:
-                                                sdir = currentDir + sdir
-                                                sock_cls.directories.update({ sdir : [] })
+                                            dirs = recvd_entities["dirs"]                                                                                            
                                             sock_cls.directories.update({ currentDir : dirs })
                                             sock_cls.files.update({ currentDir : files })
-                                        sock_cls.directories = tempdirs
                                         selected_idx = 0
                                     except Exception as e:
                                         print(e) 

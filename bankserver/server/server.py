@@ -79,7 +79,7 @@ def handleClient(client : ClientSocketThread, addr):
                                             print(e)
                                             client.sendJson(message={ "message" : "Failed to create directory.", "state" : False })                                         
                                     #Required permission
-                                    
+
                                     if action == "delete" and checkVal(value):
                                         try:
                                             del_dir = currentDir / value
@@ -91,6 +91,8 @@ def handleClient(client : ClientSocketThread, addr):
                                             
                                     if action == "next" and checkVal(value):
                                         currentDir = currentDir / value
+                                    
+                                    if action == "get" and checkVal(value):
                                         files, dirs = getFilesAndDirs(username=client.user.username,path=currentDir)
                                         payload = { "files" : files, "dirs" : dirs }
                                         client.sendJson(payload)
@@ -106,10 +108,10 @@ def handleClient(client : ClientSocketThread, addr):
                                             try:
                                                 file_name : str = msgdict.get("name")
                                                 if "/" in file_name:
-                                                    client.sendJson(message={ "message" : "Invalid name file name (No '/' allowed).", "state" : True })
+                                                    client.sendJson(message={ "message" : "Invalid name file name (No '/' allowed).", "state" : False })
                                                     file_name = None
                                             except:
-                                                client.sendJson(message={ "message" : "Invalid name file name.", "state" : True })
+                                                client.sendJson(message={ "message" : "Invalid name file name.", "state" : False })
                                                 file_name = None
 
                                             if file_name != None:

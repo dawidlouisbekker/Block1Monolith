@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, Engine, LargeBinary, ForeignKey, Float, Boolean
+from sqlalchemy import create_engine, Column, String, Integer, Engine, LargeBinary, ForeignKey, Float, Boolean, text
 from sqlalchemy.orm import declarative_base, Session, sessionmaker
 from sqlalchemy.engine import Engine
 import os
@@ -8,12 +8,12 @@ import bcrypt
 
 
 CON_STR_DRIVER = "oracle+cx_oracle://"
-CON_STR_HOST = "@DawidBekker2005:1521/XE"
+CON_STR_HOST = "@localhost:1522/XEPDB1"
 
-OWNER = os.getenv("OWNER", "c##bank_user:askljnobbDSAi12sSda")
-
+LOCAL_OWNER = os.getenv("OWNER", "c##bank_user:askljnobbDSAi12sSda")
+HOST_OWNER = os.getenv("HOST_OWNER","system:123456")
 #SQLITE_URI = os.getenv("SQLITE_URI", "sqlite:///users.db")
-ORACLE_URI = f"{CON_STR_DRIVER}{OWNER}{CON_STR_HOST}"
+ORACLE_URI =  "oracle+cx_oracle://system:123456@localhost:1522/XE" #{HOST_OWNER}{CON_STR_HOST}"
 
 try:
     lib_dir = r"C:\instantclient_18_5"
@@ -27,6 +27,13 @@ except Exception as err:
 # Create SQLAlchemy engine for Oracle
 engine = create_engine(ORACLE_URI)
 
+try:
+    with engine.connect() as connection:
+        result = connection.execute(text(("SELECT table_name FROM all_tables WHERE owner = 'C##BANK_USER'")))
+        print(result.fetchall())
+except Exception as e:
+    print(e)
+    exit()
 # Declare the base for your models
 Base = declarative_base()
 

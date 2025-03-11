@@ -1,0 +1,29 @@
+Run docker-compose up on the docker file. To test if it is correctly set up run do 
+cd ./bankserver
+./.venv/scripts/activate
+python startServer.python
+
+if It gives an error or does not output of:
+[('ACCOUNTS',), ('COMPANY_GROUPS',), ('FTP_ADMINS',), ('BANK_ADMINS',), ('COMPANY_USERS',), ('CLIENTS',), ('COMPANIES',), ('USER_GROUPS',)]
+it is not correctly set up. 
+
+Run these commands inside the dockekr container to fix it:
+
+sqlplus sys as sysdba
+
+//ENTER THE PASSWORD: 123456
+RUN:
+
+CREATE USER C##BANK_USER IDENTIFIED BY askljnobbDSAi12sSda;
+ALTER USER C##BANK_USER QUOTA UNLIMITED ON USERS;
+GRANT CONNECT, RESOURCE, DBA TO C##BANK_USER;
+GRANT UNLIMITED TABLESPACE TO C##BANK_USER;
+exit
+
+Once it does not show 'SQL>' anymore run:
+
+impdp C##BANK_USER/askljnobbDSAi12sSda@//localhost:1521/XE \
+    DIRECTORY=DATA_PUMP_DIR \
+    DUMPFILE=BANK_USER_DUMP.DMP \
+    LOGFILE=import.log \
+    REMAP_SCHEMA=ORIGINAL_SCHEMA:C##BANK_USER
